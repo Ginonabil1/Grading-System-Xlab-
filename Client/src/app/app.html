@@ -1,0 +1,31 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" routerLink="/students" aria-label="Gradebook home">
+      <span class="brand-mark">G</span>
+      <span><strong>Gradebook</strong><small>School administration</small></span>
+    </a>
+
+    <div class="nav-label">WORKSPACE</div>
+    <nav aria-label="Main navigation">
+      <a routerLink="/students" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <span class="nav-icon">01</span> Students
+      </a>
+      <a routerLink="/grades" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <span class="nav-icon">02</span> Grade entry
+      </a>
+    </nav>
+
+    <div class="sidebar-note">
+      <span class="note-dot"></span>
+      <span><strong>Local workspace</strong><small>Development environment</small></span>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div><span class="eyebrow">ACADEMIC YEAR</span><strong>Student grading system</strong></div>
+      <span class="topbar-status"><span></span> Development</span>
+    </header>
+    <div class="page-content"><router-outlet /></div>
+  </main>
+</div>

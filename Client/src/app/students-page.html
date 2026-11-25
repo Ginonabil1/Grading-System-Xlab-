@@ -1,0 +1,81 @@
+<section class="page-heading">
+  <div>
+    <div class="eyebrow">DIRECTORY</div>
+    <h1>Students</h1>
+    <p>Manage student records and find a student by name, ID, year, or grade.</p>
+  </div>
+  <button class="button primary" type="button" (click)="openCreateForm()">＋ Add student</button>
+</section>
+
+@if (notice) { <div class="notice success" role="status">{{ notice }}</div> }
+@if (error) { <div class="notice error" role="alert">{{ error }}</div> }
+
+<section class="panel filter-panel" aria-label="Student filters">
+  <form class="filters" (ngSubmit)="loadStudents()">
+    <label class="search-field">
+      <span>Search students</span>
+      <input name="searchTerm" [(ngModel)]="searchTerm" placeholder="Name, national ID, or academic year" />
+    </label>
+    <label class="grade-filter">
+      <span>Grade</span>
+      <select name="gradeLetter" [(ngModel)]="gradeLetter">
+        <option value="">All grades</option>
+        @for (grade of gradeOptions; track grade) { <option [value]="grade">Grade {{ grade }}</option> }
+      </select>
+    </label>
+    <button class="button secondary search-button" type="submit">Search</button>
+  </form>
+</section>
+
+@if (formOpen) {
+  <section class="panel editor-panel">
+    <div class="panel-heading">
+      <div><div class="eyebrow">STUDENT DETAILS</div><h2>{{ editingId === null ? 'Add a student' : 'Edit student' }}</h2></div>
+      <button class="icon-button" type="button" aria-label="Close form" (click)="cancelForm()">×</button>
+    </div>
+    <form #studentForm="ngForm" (ngSubmit)="saveStudent()" class="student-form">
+      <label>
+        <span>Full name</span>
+        <input name="name" [(ngModel)]="form.name" required maxlength="100" placeholder="Enter student name" />
+      </label>
+      <label>
+        <span>National ID <small>14 digits</small></span>
+        <input name="nationalId" [(ngModel)]="form.nationalId" required minlength="14" maxlength="14" pattern="[0-9]{14}" inputmode="numeric" placeholder="00000000000000" />
+      </label>
+      <label>
+        <span>Academic year</span>
+        <input name="academicYear" [(ngModel)]="form.academicYear" required maxlength="50" placeholder="e.g. 1st Primary" />
+      </label>
+      <div class="form-actions">
+        <button class="button secondary" type="button" (click)="cancelForm()">Cancel</button>
+        <button class="button primary" type="submit" [disabled]="studentForm.invalid || saving">
+          {{ saving ? 'Saving…' : editingId === null ? 'Save student' : 'Save changes' }}
+        </button>
+      </div>
+    </form>
+  </section>
+}
+
+<section class="panel table-panel">
+  <div class="table-heading">
+    <div><h2>Student records</h2><p>{{ students.length }} {{ students.length === 1 ? 'student' : 'students' }} shown</p></div>
+    <span class="table-icon">ID</span>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>STUDENT</th><th>NATIONAL ID</th><th>ACADEMIC YEAR</th><th class="actions-col">ACTIONS</th></tr></thead>
+      <tbody>
+        @for (student of students; track student.id) {
+          <tr>
+            <td><div class="student-cell"><span class="avatar">{{ student.name.charAt(0).toUpperCase() }}</span><strong>{{ student.name }}</strong></div></td>
+            <td class="mono">{{ student.nationalId }}</td>
+            <td><span class="year-pill">{{ student.academicYear }}</span></td>
+            <td class="actions-col"><button class="text-button" type="button" (click)="editStudent(student)">Edit</button><button class="text-button danger-text" type="button" (click)="deleteStudent(student)">Delete</button></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="4" class="empty-state">{{ loading ? 'Loading students…' : 'No students found. Add a student or adjust your search.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
