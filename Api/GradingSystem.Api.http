@@ -1,6 +1,24 @@
-@GradingSystem.Api_HostAddress = http://localhost:5285
+@apiUrl = http://localhost:5285/api
 
-GET {{GradingSystem.Api_HostAddress}}/weatherforecast/
+GET {{apiUrl}}/students
 Accept: application/json
 
 ###
+
+GET {{apiUrl}}/subjects
+Accept: application/json
+
+###
+
+GET {{apiUrl}}/student-grades?subjectId=1
+Accept: application/json
+
+###
+
+GET {{apiUrl}}/student-grades?studentId=1
+Accept: application/json
+
+###
+
+GET {{apiUrl}}/student-grades/statistics?subjectId=1
+Accept: application/json

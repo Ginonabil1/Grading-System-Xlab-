@@ -56,7 +56,9 @@ export class GradesPage implements OnInit {
       group.grades.push(grade);
       groups.set(key, group);
     }
-    return [...groups.values()].sort((a, b) => compareAcademicYears(a.academicYear, b.academicYear));
+    return [...groups.values()].sort((a, b) =>
+      compareAcademicYears(a.academicYear, b.academicYear),
+    );
   }
 
   ngOnInit(): void {
@@ -92,7 +94,7 @@ export class GradesPage implements OnInit {
   }
 
   loadStudents(): void {
-    this.api.getStudentsForGrades().subscribe({
+    this.api.getStudents().subscribe({
       next: (students) => {
         this.students = students;
         this.filteredStudents = this.filterStudents(this.studentSearch);
@@ -138,7 +140,11 @@ export class GradesPage implements OnInit {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       if (!this.studentPickerOpen) this.openStudentPicker();
-      else if (this.filteredStudents.length) this.activeStudentIndex = Math.min(this.activeStudentIndex + 1, this.filteredStudents.length - 1);
+      else if (this.filteredStudents.length)
+        this.activeStudentIndex = Math.min(
+          this.activeStudentIndex + 1,
+          this.filteredStudents.length - 1,
+        );
       return;
     }
     if (event.key === 'ArrowUp') {
@@ -166,7 +172,10 @@ export class GradesPage implements OnInit {
     const term = search.trim().toLocaleLowerCase();
     if (!term) return this.students;
     return this.students.filter((student) =>
-      `${student.name} ${student.academicYear} ${student.nationalId}`.toLocaleLowerCase().includes(term));
+      `${student.name} ${student.academicYear} ${student.nationalId}`
+        .toLocaleLowerCase()
+        .includes(term),
+    );
   }
 
   loadSubjects(preferredId?: number): void {
@@ -262,9 +271,14 @@ export class GradesPage implements OnInit {
   }
 
   createGrade(): void {
-    if (this.selectedSubjectId === null || this.newStudentId === null ||
-        this.newTerm1 === null || this.newTerm2 === null ||
-        !this.validMarks(this.newTerm1, this.newTerm2)) return;
+    if (
+      this.selectedSubjectId === null ||
+      this.newStudentId === null ||
+      this.newTerm1 === null ||
+      this.newTerm2 === null ||
+      !this.validMarks(this.newTerm1, this.newTerm2)
+    )
+      return;
     const request: GradeInput = {
       subjectId: this.selectedSubjectId,
       studentId: this.newStudentId,
@@ -312,42 +326,49 @@ export class GradesPage implements OnInit {
   }
 
   saveEdit(): void {
-    if (this.editingGradeId === null || this.editingTerm1 === null || this.editingTerm2 === null ||
-        !this.validMarks(this.editingTerm1, this.editingTerm2)) return;
+    if (
+      this.editingGradeId === null ||
+      this.editingTerm1 === null ||
+      this.editingTerm2 === null ||
+      !this.validMarks(this.editingTerm1, this.editingTerm2)
+    )
+      return;
     this.saving = true;
     this.error = '';
     const gradeId = this.editingGradeId;
     const term1Mark = this.editingTerm1;
     const term2Mark = this.editingTerm2;
-    this.api.updateGrade(gradeId, {
-      term1Mark,
-      term2Mark,
-    }).subscribe({
-      next: () => {
-        this.showNotice('Grade updated.');
-        this.saving = false;
-        const previous = this.grades.find((grade) => grade.id === gradeId);
-        if (previous) {
-          const totalMark = term1Mark + term2Mark;
-          const updated: StudentGrade = {
-            ...previous,
-            term1Mark,
-            term2Mark,
-            totalMark,
-            gradeLetter: this.letterGrade(totalMark),
-          };
-          this.grades = this.grades.map((grade) => grade.id === gradeId ? updated : grade);
-          this.adjustStatistics(previous, updated);
-        }
-        this.cancelEdit();
-        this.changeDetector.markForCheck();
-      },
-      error: (error: unknown) => {
-        this.error = this.errorMessage(error, 'Could not update this grade.');
-        this.saving = false;
-        this.changeDetector.markForCheck();
-      },
-    });
+    this.api
+      .updateGrade(gradeId, {
+        term1Mark,
+        term2Mark,
+      })
+      .subscribe({
+        next: () => {
+          this.showNotice('Grade updated.');
+          this.saving = false;
+          const previous = this.grades.find((grade) => grade.id === gradeId);
+          if (previous) {
+            const totalMark = term1Mark + term2Mark;
+            const updated: StudentGrade = {
+              ...previous,
+              term1Mark,
+              term2Mark,
+              totalMark,
+              gradeLetter: this.letterGrade(totalMark),
+            };
+            this.grades = this.grades.map((grade) => (grade.id === gradeId ? updated : grade));
+            this.adjustStatistics(previous, updated);
+          }
+          this.cancelEdit();
+          this.changeDetector.markForCheck();
+        },
+        error: (error: unknown) => {
+          this.error = this.errorMessage(error, 'Could not update this grade.');
+          this.saving = false;
+          this.changeDetector.markForCheck();
+        },
+      });
   }
 
   deleteGrade(grade: StudentGrade): void {
@@ -367,9 +388,16 @@ export class GradesPage implements OnInit {
   }
 
   validMarks(term1: number | null, term2: number | null): term1 is number {
-    return term1 !== null && term2 !== null &&
-      Number.isInteger(term1) && Number.isInteger(term2) &&
-      term1 >= 0 && term1 <= 30 && term2 >= 0 && term2 <= 30;
+    return (
+      term1 !== null &&
+      term2 !== null &&
+      Number.isInteger(term1) &&
+      Number.isInteger(term2) &&
+      term1 >= 0 &&
+      term1 <= 30 &&
+      term2 >= 0 &&
+      term2 <= 30
+    );
   }
 
   private sortGrades(grades: StudentGrade[]): StudentGrade[] {

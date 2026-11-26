@@ -3,18 +3,52 @@
     <h1>Grade entry</h1>
     <p>Enter and update marks for each subject. Each term is out of 30.</p>
   </div>
-  <button class="button primary" type="button" [disabled]="!selectedSubjectId || students.length === 0" (click)="gradeFormOpen = !gradeFormOpen">＋ Add grades</button>
+  <button
+    class="button primary"
+    type="button"
+    [disabled]="!selectedSubjectId || students.length === 0"
+    (click)="gradeFormOpen = !gradeFormOpen"
+  >
+    ＋ Add grades
+  </button>
 </section>
 
-@if (notice) { <div class="toast" [class.success]="noticeType === 'success'" [class.error]="noticeType === 'error'" role="status" aria-live="polite"><span>{{ notice }}</span><button type="button" aria-label="Dismiss notification" (click)="dismissNotice()">×</button></div> }
-@if (error) { <div class="toast error" role="alert" aria-live="assertive"><span>{{ error }}</span></div> }
+@if (notice) {
+  <div
+    class="toast"
+    [class.success]="noticeType === 'success'"
+    [class.error]="noticeType === 'error'"
+    role="status"
+    aria-live="polite"
+  >
+    <span>{{ notice }}</span><button
+      type="button"
+      aria-label="Dismiss notification"
+      (click)="dismissNotice()"
+    >
+      ×
+    </button>
+  </div>
+}
+@if (error) {
+  <div class="toast error" role="alert" aria-live="assertive">
+    <span>{{ error }}</span>
+  </div>
+}
 
 <section class="panel subject-panel">
   <div class="subject-select-wrap">
-    <label for="subject-select">SUBJECT</label>
-    <select id="subject-select" [ngModel]="selectedSubjectId" [ngModelOptions]="{ standalone: true }" (ngModelChange)="changeSubject($event)">
+    <label for="subject-select">Subject</label>
+    <select
+      id="subject-select"
+      [ngModel]="selectedSubjectId"
+      [ngModelOptions]="{ standalone: true }"
+      (ngModelChange)="changeSubject($event)"
+    >
       <option [ngValue]="null">Choose a subject</option>
-      @for (subject of subjects; track subject.id) { <option [ngValue]="subject.id">{{ subject.name }}</option> }
+      @for (subject of subjects; track subject.id) {
+        <option [ngValue]="subject.id">{{ subject.name }}</option>
+      }
     </select>
   </div>
   <button class="text-button" type="button" (click)="toggleSubjectForm()">＋ Add subject</button>
@@ -23,35 +57,108 @@
 @if (subjectFormOpen) {
   <form class="panel subject-form" #subjectForm="ngForm" (ngSubmit)="createSubject()">
     <label for="new-subject">Subject name</label>
-    <input id="new-subject" name="newSubjectName" [(ngModel)]="newSubjectName" required maxlength="100" placeholder="e.g. Arabic" />
+    <input
+      id="new-subject"
+      name="newSubjectName"
+      [(ngModel)]="newSubjectName"
+      required
+      maxlength="100"
+      placeholder="e.g. Arabic"
+    />
     <div class="form-actions">
-      <button class="button secondary" type="button" [disabled]="saving" (click)="cancelSubjectForm()">Cancel</button>
-      <button class="button primary" type="submit" [disabled]="subjectForm.invalid || saving">{{ saving ? 'Saving…' : 'Save subject' }}</button>
+      <button
+        class="button secondary"
+        type="button"
+        [disabled]="saving"
+        (click)="cancelSubjectForm()"
+      >
+        Cancel
+      </button>
+      <button class="button primary" type="submit" [disabled]="subjectForm.invalid || saving">
+        {{ saving ? 'Saving…' : 'Save subject' }}
+      </button>
     </div>
   </form>
 }
 
 @if (selectedSubjectId && statistics) {
   <section class="stats-grid" aria-label="Grade statistics">
-    <article class="stat-card"><span class="stat-label">GRADED</span><strong>{{ statistics.gradedStudents }}</strong><small>students with marks</small></article>
-    <article class="stat-card success-card"><span class="stat-label">SUCCEEDED</span><strong>{{ statistics.succeededStudents }}</strong><small>50% or above</small></article>
-    <article class="stat-card fail-card"><span class="stat-label">FAILED</span><strong>{{ statistics.failedStudents }}</strong><small>below 50%</small></article>
-    <article class="stat-card boundary-card"><span class="stat-label">EXACTLY 50%</span><strong>{{ statistics.exactly50PercentStudents }}</strong><small>included in succeeded</small></article>
+    <article class="stat-card">
+      <span class="stat-label">Graded</span><strong>{{ statistics.gradedStudents }}</strong
+      ><small>students with marks</small>
+    </article>
+    <article class="stat-card success-card">
+      <span class="stat-label">Passed</span><strong>{{ statistics.succeededStudents }}</strong
+      ><small>50% or above</small>
+    </article>
+    <article class="stat-card fail-card">
+      <span class="stat-label">Below 50%</span><strong>{{ statistics.failedStudents }}</strong
+      ><small>below 50%</small>
+    </article>
+    <article class="stat-card boundary-card">
+      <span class="stat-label">Exactly 50%</span
+      ><strong>{{ statistics.exactly50PercentStudents }}</strong
+      ><small>included in succeeded</small>
+    </article>
   </section>
 }
 
 @if (gradeFormOpen) {
   <section class="panel editor-panel">
-    <div class="section-heading"><div><div class="eyebrow">NEW RECORD</div><h2>Add subject marks</h2></div><button class="icon-button" type="button" aria-label="Close form" (click)="gradeFormOpen = false">×</button></div>
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">New grade</div>
+        <h2>Add subject marks</h2>
+      </div>
+      <button
+        class="icon-button"
+        type="button"
+        aria-label="Close form"
+        (click)="gradeFormOpen = false"
+      >
+        ×
+      </button>
+    </div>
     <form #gradeForm="ngForm" class="grade-form" (ngSubmit)="createGrade()">
-      <label><span>Student</span>
+      <label
+        ><span>Student</span>
         <div class="student-picker" (focusout)="studentPickerBlur($event)">
-          <input name="studentSearch" type="text" [(ngModel)]="studentSearch" (focus)="openStudentPicker()" (ngModelChange)="searchStudents($event)" (keydown)="handleStudentPickerKeydown($event)" role="combobox" aria-autocomplete="list" [attr.aria-expanded]="studentPickerOpen" aria-controls="student-options" [attr.aria-activedescendant]="studentPickerOpen && filteredStudents.length ? 'student-option-' + filteredStudents[activeStudentIndex]?.id : null" required autocomplete="off" placeholder="Choose or search for a student" />
+          <input
+            name="studentSearch"
+            type="text"
+            [(ngModel)]="studentSearch"
+            (focus)="openStudentPicker()"
+            (ngModelChange)="searchStudents($event)"
+            (keydown)="handleStudentPickerKeydown($event)"
+            role="combobox"
+            aria-autocomplete="list"
+            [attr.aria-expanded]="studentPickerOpen"
+            aria-controls="student-options"
+            [attr.aria-activedescendant]="
+              studentPickerOpen && filteredStudents.length
+                ? 'student-option-' + filteredStudents[activeStudentIndex]?.id
+                : null
+            "
+            required
+            autocomplete="off"
+            placeholder="Choose or search for a student"
+          />
           @if (studentPickerOpen) {
             <div class="student-options" id="student-options" role="listbox">
               @for (student of filteredStudents; track student.id; let index = $index) {
-                <button class="student-option" [class.active]="index === activeStudentIndex" [id]="'student-option-' + student.id" type="button" role="option" [attr.aria-selected]="student.id === newStudentId" (mouseenter)="activeStudentIndex = index" (click)="selectStudent(student)">
-                  <span>{{ student.name }}</span><small>{{ student.academicYear }} · {{ student.nationalId }}</small>
+                <button
+                  class="student-option"
+                  [class.active]="index === activeStudentIndex"
+                  [id]="'student-option-' + student.id"
+                  type="button"
+                  role="option"
+                  [attr.aria-selected]="student.id === newStudentId"
+                  (mouseenter)="activeStudentIndex = index"
+                  (click)="selectStudent(student)"
+                >
+                  <span>{{ student.name }}</span><small
+                    >{{ student.academicYear }} · {{ student.nationalId }}</small
+                  >
                 </button>
               } @empty {
                 <div class="student-options-empty" role="status">No matching students.</div>
@@ -60,50 +167,167 @@
           }
         </div>
       </label>
-      <label><span>Term 1 <small>out of 30</small></span><input name="newTerm1" type="number" [(ngModel)]="newTerm1" required min="0" max="30" step="1" /></label>
-      <label><span>Term 2 <small>out of 30</small></span><input name="newTerm2" type="number" [(ngModel)]="newTerm2" required min="0" max="30" step="1" /></label>
-      <div class="form-actions"><button class="button secondary" type="button" (click)="gradeFormOpen = false">Cancel</button><button class="button primary" type="submit" [disabled]="gradeForm.invalid || newStudentId === null || saving">{{ saving ? 'Saving…' : 'Save marks' }}</button></div>
+      <label
+        ><span>Term 1 <small>out of 30</small></span
+        ><input
+          name="newTerm1"
+          type="number"
+          [(ngModel)]="newTerm1"
+          required
+          min="0"
+          max="30"
+          step="1"
+      /></label>
+      <label
+        ><span>Term 2 <small>out of 30</small></span
+        ><input
+          name="newTerm2"
+          type="number"
+          [(ngModel)]="newTerm2"
+          required
+          min="0"
+          max="30"
+          step="1"
+      /></label>
+      <div class="form-actions">
+        <button class="button secondary" type="button" (click)="gradeFormOpen = false">
+          Cancel</button
+        ><button
+          class="button primary"
+          type="submit"
+          [disabled]="gradeForm.invalid || newStudentId === null || saving"
+        >
+          {{ saving ? 'Saving…' : 'Save marks' }}
+        </button>
+      </div>
     </form>
   </section>
 }
 
 <section class="panel table-panel">
   <div class="table-heading">
-    <div><div class="eyebrow">{{ statistics?.subjectName ?? 'SUBJECT' }}</div><h2>Student marks</h2><p>{{ grades.length }} {{ grades.length === 1 ? 'record' : 'records' }}</p></div>
-    <span class="max-pill">MAX 60</span>
+    <div>
+      <div class="eyebrow">{{ statistics?.subjectName ?? 'Subject' }}</div>
+      <h2>Student marks</h2>
+      <p>{{ grades.length }} {{ grades.length === 1 ? 'record' : 'records' }}</p>
+    </div>
+    <span class="max-pill">Out of 60</span>
   </div>
   <div class="table-scroll">
     <table>
-      <thead><tr><th>STUDENT</th><th>ACADEMIC YEAR</th><th>TERM 1</th><th>TERM 2</th><th>TOTAL</th><th>GRADE</th><th class="actions-col">ACTIONS</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Academic year</th>
+          <th>Term 1</th>
+          <th>Term 2</th>
+          <th>Total</th>
+          <th>Grade</th>
+          <th class="actions-col">Actions</th>
+        </tr>
+      </thead>
       <tbody>
         @for (group of gradeGroups; track group.key) {
-          <tr class="year-group"><td colspan="7">{{ group.academicYear }} <span>{{ group.grades.length }} {{ group.grades.length === 1 ? 'record' : 'records' }}</span></td></tr>
+          <tr class="year-group">
+            <td colspan="7">
+              {{ group.academicYear }}
+              <span
+                >{{ group.grades.length }}
+                {{ group.grades.length === 1 ? 'record' : 'records' }}</span
+              >
+            </td>
+          </tr>
           @for (grade of group.grades; track grade.id) {
             <tr>
-              <td><div class="student-name"><span class="avatar">{{ grade.studentName.charAt(0).toUpperCase() }}</span><span><strong>{{ grade.studentName }}</strong><small>{{ grade.nationalId }}</small></span></div></td>
-              <td><span class="year-pill">{{ grade.academicYear }}</span></td>
+              <td>
+                <div class="student-name">
+                  <span class="avatar">{{ grade.studentName.charAt(0).toUpperCase() }}</span><span
+                    ><strong>{{ grade.studentName }}</strong
+                    ><small>{{ grade.nationalId }}</small></span
+                  >
+                </div>
+              </td>
+              <td>
+                <span class="year-pill">{{ grade.academicYear }}</span>
+              </td>
               @if (editingGradeId === grade.id) {
-                <td><input class="mark-input" type="number" [name]="'edit-term1-' + grade.id" [(ngModel)]="editingTerm1" min="0" max="30" step="1" /></td>
-                <td><input class="mark-input" type="number" [name]="'edit-term2-' + grade.id" [(ngModel)]="editingTerm2" min="0" max="30" step="1" /></td>
-                <td class="total">—</td><td>—</td>
-                <td class="actions-col"><button class="text-button" type="button" [disabled]="!validMarks(editingTerm1, editingTerm2) || saving" (click)="saveEdit()">Save</button><button class="text-button muted-text" type="button" (click)="cancelEdit()">Cancel</button></td>
+                <td>
+                  <input
+                    class="mark-input"
+                    type="number"
+                    [name]="'edit-term1-' + grade.id"
+                    [(ngModel)]="editingTerm1"
+                    min="0"
+                    max="30"
+                    step="1"
+                  />
+                </td>
+                <td>
+                  <input
+                    class="mark-input"
+                    type="number"
+                    [name]="'edit-term2-' + grade.id"
+                    [(ngModel)]="editingTerm2"
+                    min="0"
+                    max="30"
+                    step="1"
+                  />
+                </td>
+                <td class="total">—</td>
+                <td>—</td>
+                <td class="actions-col">
+                  <button
+                    class="text-button"
+                    type="button"
+                    [disabled]="!validMarks(editingTerm1, editingTerm2) || saving"
+                    (click)="saveEdit()"
+                  >
+                    Save</button
+                  ><button class="text-button muted-text" type="button" (click)="cancelEdit()">
+                    Cancel
+                  </button>
+                </td>
               } @else {
                 <td class="mark-value">{{ grade.term1Mark }}<span>/30</span></td>
                 <td class="mark-value">{{ grade.term2Mark }}<span>/30</span></td>
                 <td class="total">{{ grade.totalMark }}<span>/60</span></td>
-                <td><span class="grade-pill" [class.grade-a]="grade.gradeLetter === 'A'" [class.grade-f]="grade.gradeLetter === 'F'">{{ grade.gradeLetter }}</span></td>
-                <td class="actions-col"><button class="text-button" type="button" (click)="startEdit(grade)">Edit</button><button class="text-button danger-text" type="button" (click)="deleteGrade(grade)">Delete</button></td>
+                <td>
+                  <span
+                    class="grade-pill"
+                    [class.grade-a]="grade.gradeLetter === 'A'"
+                    [class.grade-f]="grade.gradeLetter === 'F'"
+                    >{{ grade.gradeLetter }}</span
+                  >
+                </td>
+                <td class="actions-col">
+                  <button class="text-button" type="button" (click)="startEdit(grade)">Edit</button
+                  ><button
+                    class="text-button danger-text"
+                    type="button"
+                    (click)="deleteGrade(grade)"
+                  >
+                    Delete
+                  </button>
+                </td>
               }
             </tr>
-            }
+          }
         } @empty {
-          <tr><td colspan="7" class="empty-state">
-            @if (!subjects.length) { Add a subject to begin. }
-            @else if (!students.length) { Add students before entering grades. }
-            @else if (loading) { Loading grade records… }
-            @else if (!selectedSubjectId) { Choose a subject to view marks. }
-            @else { No grade records for this subject yet. Use “Add grades” to enter the first marks. }
-          </td></tr>
+          <tr>
+            <td colspan="7" class="empty-state">
+              @if (!subjects.length) {
+                Add a subject to begin.
+              } @else if (!students.length) {
+                Add students before entering grades.
+              } @else if (loading) {
+                Loading grade records…
+              } @else if (!selectedSubjectId) {
+                Choose a subject to view marks.
+              } @else {
+                No grade records for this subject yet. Use “Add grades” to enter the first marks.
+              }
+            </td>
+          </tr>
         }
       </tbody>
     </table>

@@ -2,7 +2,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { GradingApi, Student, StudentGrade, StudentInput, Subject } from './grading-api';
-import { ACADEMIC_YEAR_GROUPS, compareAcademicYears, normalizeAcademicYear } from './academic-years';
+import {
+  ACADEMIC_YEAR_GROUPS,
+  compareAcademicYears,
+  normalizeAcademicYear,
+} from './academic-years';
 import { forkJoin } from 'rxjs';
 
 interface StudentProfileSubject {
@@ -46,7 +50,8 @@ export class StudentsPage implements OnInit {
   get studentGroups(): { key: string; academicYear: string; students: Student[] }[] {
     const groups = new Map<string, { key: string; academicYear: string; students: Student[] }>();
     for (const student of this.students) {
-      const academicYear = normalizeAcademicYear(student.academicYear) || 'Unspecified academic year';
+      const academicYear =
+        normalizeAcademicYear(student.academicYear) || 'Unspecified academic year';
       const key = academicYear.toLocaleLowerCase();
       const group = groups.get(key) ?? { key, academicYear, students: [] };
       group.students.push(student);
@@ -55,7 +60,9 @@ export class StudentsPage implements OnInit {
     return [...groups.values()]
       .map((group) => ({
         ...group,
-        students: [...group.students].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+        students: [...group.students].sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+        ),
       }))
       .sort((a, b) => compareAcademicYears(a.academicYear, b.academicYear));
   }
@@ -86,7 +93,10 @@ export class StudentsPage implements OnInit {
       },
       error: (error: unknown) => {
         if (requestId !== this.requestId) return;
-        this.error = this.errorMessage(error, 'Could not load students. Check that the API is running.');
+        this.error = this.errorMessage(
+          error,
+          'Could not load students. Check that the API is running.',
+        );
         this.loading = false;
         this.changeDetector.markForCheck();
       },
@@ -129,9 +139,11 @@ export class StudentsPage implements OnInit {
   }
 
   validStudentForm(): boolean {
-    return this.form.name.trim().length > 0 &&
+    return (
+      this.form.name.trim().length > 0 &&
       /^[0-9]{14}$/.test(this.form.nationalId.trim()) &&
-      this.form.academicYear.trim().length > 0;
+      this.form.academicYear.trim().length > 0
+    );
   }
 
   hasKnownAcademicYear(value: string): boolean {
@@ -213,7 +225,9 @@ export class StudentsPage implements OnInit {
           if (this.searchTerm || this.gradeLetter) {
             this.loadStudents();
           } else {
-            this.students = [...this.students, student].sort((a, b) => a.name.localeCompare(b.name));
+            this.students = [...this.students, student].sort((a, b) =>
+              a.name.localeCompare(b.name),
+            );
           }
           this.changeDetector.markForCheck();
         },
@@ -228,7 +242,7 @@ export class StudentsPage implements OnInit {
             this.loadStudents();
           } else {
             this.students = this.students
-              .map((student) => student.id === id ? { ...student, ...payload } : student)
+              .map((student) => (student.id === id ? { ...student, ...payload } : student))
               .sort((a, b) => a.name.localeCompare(b.name));
           }
           this.changeDetector.markForCheck();
@@ -239,7 +253,8 @@ export class StudentsPage implements OnInit {
   }
 
   deleteStudent(student: Student): void {
-    if (!window.confirm(`Delete ${student.name}? Their grade records will also be deleted.`)) return;
+    if (!window.confirm(`Delete ${student.name}? Their grade records will also be deleted.`))
+      return;
     this.error = '';
     this.api.deleteStudent(student.id).subscribe({
       next: () => {

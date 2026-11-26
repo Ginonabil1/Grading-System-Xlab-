@@ -5,22 +5,36 @@
       <span><strong>Gradebook</strong><small>School administration</small></span>
     </a>
 
-    <div class="nav-label">WORKSPACE</div>
+    <div class="nav-label">Management</div>
     <nav aria-label="Main navigation">
       <a routerLink="/students" routerLinkActive="active" ariaCurrentWhenActive="page">
-        <span class="nav-icon">01</span> Students
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20m7-9a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-6.5a4 4 0 0 1 0 7.75M21 20v-1.5a4 4 0 0 0-3-3.87"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Students
       </a>
       <a routerLink="/grades" routerLinkActive="active" ariaCurrentWhenActive="page">
-        <span class="nav-icon">02</span> Grade entry
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M5 4.5h10.5A3.5 3.5 0 0 1 19 8v12H8a3 3 0 0 1-3-3V4.5Zm0 0v12A3.5 3.5 0 0 0 8.5 20M9 9h6m-6 4h6"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Grade entry
       </a>
     </nav>
-
   </aside>
 
   <main class="main-area">
-    <header class="topbar">
-      <div><span class="eyebrow">ACADEMIC YEAR</span><strong>Student grading system</strong></div>
-    </header>
     <div class="page-content"><router-outlet /></div>
   </main>
 </div>

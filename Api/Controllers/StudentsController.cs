@@ -35,23 +35,18 @@ public sealed class StudentsController(GradingDbContext dbContext) : ControllerB
                 return BadRequest(new { message = "Grade letter must be A, B, C, D, or F." });
             }
 
-            query = normalizedGrade switch
+            (int minimum, int maximumExclusive) = normalizedGrade switch
             {
-                "A" => query.Where(student => student.Grades.Any(grade =>
-                    grade.Term1Mark + grade.Term2Mark >= GradeScale.GradeAMinimum)),
-                "B" => query.Where(student => student.Grades.Any(grade =>
-                    grade.Term1Mark + grade.Term2Mark >= GradeScale.GradeBMinimum &&
-                    grade.Term1Mark + grade.Term2Mark < GradeScale.GradeAMinimum)),
-                "C" => query.Where(student => student.Grades.Any(grade =>
-                    grade.Term1Mark + grade.Term2Mark >= GradeScale.GradeCMinimum &&
-                    grade.Term1Mark + grade.Term2Mark < GradeScale.GradeBMinimum)),
-                "D" => query.Where(student => student.Grades.Any(grade =>
-                    grade.Term1Mark + grade.Term2Mark >= GradeScale.GradeDMinimum &&
-                    grade.Term1Mark + grade.Term2Mark < GradeScale.GradeCMinimum)),
-                "F" => query.Where(student => student.Grades.Any(grade =>
-                    grade.Term1Mark + grade.Term2Mark < GradeScale.GradeDMinimum)),
-                _ => query
+                "A" => (GradeScale.GradeAMinimum, GradeScale.MaximumSubjectTotal + 1),
+                "B" => (GradeScale.GradeBMinimum, GradeScale.GradeAMinimum),
+                "C" => (GradeScale.GradeCMinimum, GradeScale.GradeBMinimum),
+                "D" => (GradeScale.GradeDMinimum, GradeScale.GradeCMinimum),
+                _ => (0, GradeScale.GradeDMinimum)
             };
+
+            query = query.Where(student => student.Grades.Any(grade =>
+                grade.Term1Mark + grade.Term2Mark >= minimum &&
+                grade.Term1Mark + grade.Term2Mark < maximumExclusive));
         }
 
         var students = await query

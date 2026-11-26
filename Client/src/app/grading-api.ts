@@ -87,10 +87,6 @@ export class GradingApi {
     return this.http.post<Subject>(`${this.apiUrl}/subjects`, { name });
   }
 
-  getStudentsForGrades(): Observable<Student[]> {
-    return this.http.get<Student[]>(`${this.apiUrl}/students`);
-  }
-
   getGrades(subjectId: number): Observable<StudentGrade[]> {
     const params = new HttpParams().set('subjectId', subjectId);
     return this.http.get<StudentGrade[]>(`${this.apiUrl}/student-grades`, { params });

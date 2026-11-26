@@ -5,9 +5,16 @@ export interface AcademicYearGroup {
 
 const ordinal = (year: number): string => {
   const remainder = year % 100;
-  const suffix = remainder >= 11 && remainder <= 13
-    ? 'th'
-    : year % 10 === 1 ? 'st' : year % 10 === 2 ? 'nd' : year % 10 === 3 ? 'rd' : 'th';
+  const suffix =
+    remainder >= 11 && remainder <= 13
+      ? 'th'
+      : year % 10 === 1
+        ? 'st'
+        : year % 10 === 2
+          ? 'nd'
+          : year % 10 === 3
+            ? 'rd'
+            : 'th';
   return `${year}${suffix}`;
 };
 
@@ -27,8 +34,12 @@ const allAcademicYears = new Set(orderedAcademicYears.map((year) => year.toLocal
 export function compareAcademicYears(left: string, right: string): number {
   const leftYear = normalizeAcademicYear(left);
   const rightYear = normalizeAcademicYear(right);
-  const leftIndex = orderedAcademicYears.findIndex((year) => year.toLocaleLowerCase() === leftYear.toLocaleLowerCase());
-  const rightIndex = orderedAcademicYears.findIndex((year) => year.toLocaleLowerCase() === rightYear.toLocaleLowerCase());
+  const leftIndex = orderedAcademicYears.findIndex(
+    (year) => year.toLocaleLowerCase() === leftYear.toLocaleLowerCase(),
+  );
+  const rightIndex = orderedAcademicYears.findIndex(
+    (year) => year.toLocaleLowerCase() === rightYear.toLocaleLowerCase(),
+  );
   if (leftIndex >= 0 && rightIndex >= 0) return leftIndex - rightIndex;
   if (leftIndex >= 0) return -1;
   if (rightIndex >= 0) return 1;
@@ -46,7 +57,8 @@ export function normalizeAcademicYear(value: string): string {
     if (allAcademicYears.has(year.toLocaleLowerCase())) return year;
   }
 
-  const exact = ACADEMIC_YEAR_GROUPS.flatMap((group) => group.options)
-    .find((year) => year.toLocaleLowerCase() === trimmed.toLocaleLowerCase());
+  const exact = ACADEMIC_YEAR_GROUPS.flatMap((group) => group.options).find(
+    (year) => year.toLocaleLowerCase() === trimmed.toLocaleLowerCase(),
+  );
   return exact ?? trimmed;
 }
