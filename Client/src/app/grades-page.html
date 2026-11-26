@@ -1,14 +1,13 @@
 <section class="page-heading">
   <div>
-    <div class="eyebrow">ASSESSMENTS</div>
     <h1>Grade entry</h1>
     <p>Enter and update marks for each subject. Each term is out of 30.</p>
   </div>
   <button class="button primary" type="button" [disabled]="!selectedSubjectId || students.length === 0" (click)="gradeFormOpen = !gradeFormOpen">＋ Add grades</button>
 </section>
 
-@if (notice) { <div class="notice success" role="status">{{ notice }}</div> }
-@if (error) { <div class="notice error" role="alert">{{ error }}</div> }
+@if (notice) { <div class="toast" [class.success]="noticeType === 'success'" [class.error]="noticeType === 'error'" role="status" aria-live="polite"><span>{{ notice }}</span><button type="button" aria-label="Dismiss notification" (click)="dismissNotice()">×</button></div> }
+@if (error) { <div class="toast error" role="alert" aria-live="assertive"><span>{{ error }}</span></div> }
 
 <section class="panel subject-panel">
   <div class="subject-select-wrap">
@@ -18,14 +17,17 @@
       @for (subject of subjects; track subject.id) { <option [ngValue]="subject.id">{{ subject.name }}</option> }
     </select>
   </div>
-  <button class="text-button" type="button" (click)="subjectFormOpen = !subjectFormOpen">＋ Add subject</button>
+  <button class="text-button" type="button" (click)="toggleSubjectForm()">＋ Add subject</button>
 </section>
 
 @if (subjectFormOpen) {
   <form class="panel subject-form" #subjectForm="ngForm" (ngSubmit)="createSubject()">
     <label for="new-subject">Subject name</label>
     <input id="new-subject" name="newSubjectName" [(ngModel)]="newSubjectName" required maxlength="100" placeholder="e.g. Arabic" />
-    <button class="button primary" type="submit" [disabled]="subjectForm.invalid || saving">{{ saving ? 'Saving…' : 'Save subject' }}</button>
+    <div class="form-actions">
+      <button class="button secondary" type="button" [disabled]="saving" (click)="cancelSubjectForm()">Cancel</button>
+      <button class="button primary" type="submit" [disabled]="subjectForm.invalid || saving">{{ saving ? 'Saving…' : 'Save subject' }}</button>
+    </div>
   </form>
 }
 
@@ -43,14 +45,24 @@
     <div class="section-heading"><div><div class="eyebrow">NEW RECORD</div><h2>Add subject marks</h2></div><button class="icon-button" type="button" aria-label="Close form" (click)="gradeFormOpen = false">×</button></div>
     <form #gradeForm="ngForm" class="grade-form" (ngSubmit)="createGrade()">
       <label><span>Student</span>
-        <select name="newStudentId" [(ngModel)]="newStudentId" required>
-          <option [ngValue]="null">Choose a student</option>
-          @for (student of students; track student.id) { <option [ngValue]="student.id">{{ student.name }} · {{ student.academicYear }}</option> }
-        </select>
+        <div class="student-picker" (focusout)="studentPickerBlur($event)">
+          <input name="studentSearch" type="text" [(ngModel)]="studentSearch" (focus)="openStudentPicker()" (ngModelChange)="searchStudents($event)" (keydown)="handleStudentPickerKeydown($event)" role="combobox" aria-autocomplete="list" [attr.aria-expanded]="studentPickerOpen" aria-controls="student-options" [attr.aria-activedescendant]="studentPickerOpen && filteredStudents.length ? 'student-option-' + filteredStudents[activeStudentIndex]?.id : null" required autocomplete="off" placeholder="Choose or search for a student" />
+          @if (studentPickerOpen) {
+            <div class="student-options" id="student-options" role="listbox">
+              @for (student of filteredStudents; track student.id; let index = $index) {
+                <button class="student-option" [class.active]="index === activeStudentIndex" [id]="'student-option-' + student.id" type="button" role="option" [attr.aria-selected]="student.id === newStudentId" (mouseenter)="activeStudentIndex = index" (click)="selectStudent(student)">
+                  <span>{{ student.name }}</span><small>{{ student.academicYear }} · {{ student.nationalId }}</small>
+                </button>
+              } @empty {
+                <div class="student-options-empty" role="status">No matching students.</div>
+              }
+            </div>
+          }
+        </div>
       </label>
       <label><span>Term 1 <small>out of 30</small></span><input name="newTerm1" type="number" [(ngModel)]="newTerm1" required min="0" max="30" step="1" /></label>
       <label><span>Term 2 <small>out of 30</small></span><input name="newTerm2" type="number" [(ngModel)]="newTerm2" required min="0" max="30" step="1" /></label>
-      <div class="form-actions"><button class="button secondary" type="button" (click)="gradeFormOpen = false">Cancel</button><button class="button primary" type="submit" [disabled]="gradeForm.invalid || saving">{{ saving ? 'Saving…' : 'Save marks' }}</button></div>
+      <div class="form-actions"><button class="button secondary" type="button" (click)="gradeFormOpen = false">Cancel</button><button class="button primary" type="submit" [disabled]="gradeForm.invalid || newStudentId === null || saving">{{ saving ? 'Saving…' : 'Save marks' }}</button></div>
     </form>
   </section>
 }
@@ -64,23 +76,26 @@
     <table>
       <thead><tr><th>STUDENT</th><th>ACADEMIC YEAR</th><th>TERM 1</th><th>TERM 2</th><th>TOTAL</th><th>GRADE</th><th class="actions-col">ACTIONS</th></tr></thead>
       <tbody>
-        @for (grade of grades; track grade.id) {
-          <tr>
-            <td><div class="student-name"><span class="avatar">{{ grade.studentName.charAt(0).toUpperCase() }}</span><span><strong>{{ grade.studentName }}</strong><small>{{ grade.nationalId }}</small></span></div></td>
-            <td><span class="year-pill">{{ grade.academicYear }}</span></td>
-            @if (editingGradeId === grade.id) {
-              <td><input class="mark-input" type="number" [name]="'edit-term1-' + grade.id" [(ngModel)]="editingTerm1" min="0" max="30" step="1" /></td>
-              <td><input class="mark-input" type="number" [name]="'edit-term2-' + grade.id" [(ngModel)]="editingTerm2" min="0" max="30" step="1" /></td>
-              <td class="total">—</td><td>—</td>
-              <td class="actions-col"><button class="text-button" type="button" [disabled]="!validMarks(editingTerm1, editingTerm2) || saving" (click)="saveEdit()">Save</button><button class="text-button muted-text" type="button" (click)="cancelEdit()">Cancel</button></td>
-            } @else {
-              <td class="mark-value">{{ grade.term1Mark }}<span>/30</span></td>
-              <td class="mark-value">{{ grade.term2Mark }}<span>/30</span></td>
-              <td class="total">{{ grade.totalMark }}<span>/60</span></td>
-              <td><span class="grade-pill" [class.grade-a]="grade.gradeLetter === 'A'" [class.grade-f]="grade.gradeLetter === 'F'">{{ grade.gradeLetter }}</span></td>
-              <td class="actions-col"><button class="text-button" type="button" (click)="startEdit(grade)">Edit</button><button class="text-button danger-text" type="button" (click)="deleteGrade(grade)">Delete</button></td>
+        @for (group of gradeGroups; track group.key) {
+          <tr class="year-group"><td colspan="7">{{ group.academicYear }} <span>{{ group.grades.length }} {{ group.grades.length === 1 ? 'record' : 'records' }}</span></td></tr>
+          @for (grade of group.grades; track grade.id) {
+            <tr>
+              <td><div class="student-name"><span class="avatar">{{ grade.studentName.charAt(0).toUpperCase() }}</span><span><strong>{{ grade.studentName }}</strong><small>{{ grade.nationalId }}</small></span></div></td>
+              <td><span class="year-pill">{{ grade.academicYear }}</span></td>
+              @if (editingGradeId === grade.id) {
+                <td><input class="mark-input" type="number" [name]="'edit-term1-' + grade.id" [(ngModel)]="editingTerm1" min="0" max="30" step="1" /></td>
+                <td><input class="mark-input" type="number" [name]="'edit-term2-' + grade.id" [(ngModel)]="editingTerm2" min="0" max="30" step="1" /></td>
+                <td class="total">—</td><td>—</td>
+                <td class="actions-col"><button class="text-button" type="button" [disabled]="!validMarks(editingTerm1, editingTerm2) || saving" (click)="saveEdit()">Save</button><button class="text-button muted-text" type="button" (click)="cancelEdit()">Cancel</button></td>
+              } @else {
+                <td class="mark-value">{{ grade.term1Mark }}<span>/30</span></td>
+                <td class="mark-value">{{ grade.term2Mark }}<span>/30</span></td>
+                <td class="total">{{ grade.totalMark }}<span>/60</span></td>
+                <td><span class="grade-pill" [class.grade-a]="grade.gradeLetter === 'A'" [class.grade-f]="grade.gradeLetter === 'F'">{{ grade.gradeLetter }}</span></td>
+                <td class="actions-col"><button class="text-button" type="button" (click)="startEdit(grade)">Edit</button><button class="text-button danger-text" type="button" (click)="deleteGrade(grade)">Delete</button></td>
+              }
+            </tr>
             }
-          </tr>
         } @empty {
           <tr><td colspan="7" class="empty-state">
             @if (!subjects.length) { Add a subject to begin. }

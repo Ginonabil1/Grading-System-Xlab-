@@ -20,39 +20,27 @@ public sealed class StudentGradesController(GradingDbContext dbContext) : Contro
             return BadRequest(new { message = "A valid subjectId is required." });
         }
 
-        var subject = await dbContext.Subjects
+        var statistics = await dbContext.Subjects
             .AsNoTracking()
             .Where(item => item.Id == subjectId.Value)
-            .Select(item => new SubjectResponse(item.Id, item.Name))
+            .Select(subject => new StudentGradeStatisticsResponse(
+                subject.Id,
+                subject.Name,
+                subject.StudentGrades.Count(),
+                subject.StudentGrades.Count(grade =>
+                    grade.Term1Mark + grade.Term2Mark >= GradeScale.GradeDMinimum),
+                subject.StudentGrades.Count(grade =>
+                    grade.Term1Mark + grade.Term2Mark < GradeScale.GradeDMinimum),
+                subject.StudentGrades.Count(grade =>
+                    grade.Term1Mark + grade.Term2Mark == GradeScale.GradeDMinimum)))
             .SingleOrDefaultAsync(cancellationToken);
 
-        if (subject is null)
+        if (statistics is null)
         {
             return NotFound(new { message = "The specified subject does not exist." });
         }
 
-        var grades = dbContext.StudentGrades
-            .AsNoTracking()
-            .Where(grade => grade.SubjectId == subjectId.Value);
-
-        var gradedStudents = await grades.CountAsync(cancellationToken);
-        var succeededStudents = await grades.CountAsync(
-            grade => grade.Term1Mark + grade.Term2Mark >= GradeScale.GradeDMinimum,
-            cancellationToken);
-        var failedStudents = await grades.CountAsync(
-            grade => grade.Term1Mark + grade.Term2Mark < GradeScale.GradeDMinimum,
-            cancellationToken);
-        var exactly50PercentStudents = await grades.CountAsync(
-            grade => grade.Term1Mark + grade.Term2Mark == GradeScale.GradeDMinimum,
-            cancellationToken);
-
-        return Ok(new StudentGradeStatisticsResponse(
-            subject.Id,
-            subject.Name,
-            gradedStudents,
-            succeededStudents,
-            failedStudents,
-            exactly50PercentStudents));
+        return Ok(statistics);
     }
 
     [HttpGet]
@@ -73,9 +61,9 @@ public sealed class StudentGradesController(GradingDbContext dbContext) : Contro
             query = query.Where(grade => grade.SubjectId == subjectId.Value);
         }
 
-        var grades = await ProjectResponses(query)
-            .OrderBy(grade => grade.StudentName)
-            .ThenBy(grade => grade.SubjectName)
+        var grades = await ProjectResponses(query
+                .OrderBy(grade => grade.Student.Name)
+                .ThenBy(grade => grade.Subject.Name))
             .ToListAsync(cancellationToken);
 
         return Ok(grades);
@@ -84,8 +72,10 @@ public sealed class StudentGradesController(GradingDbContext dbContext) : Contro
     [HttpGet("{id:int}")]
     public async Task<ActionResult<StudentGradeResponse>> GetById(int id, CancellationToken cancellationToken)
     {
-        var grade = await ProjectResponses(dbContext.StudentGrades.AsNoTracking())
-            .SingleOrDefaultAsync(grade => grade.Id == id, cancellationToken);
+        var grade = await ProjectResponses(dbContext.StudentGrades
+                .AsNoTracking()
+                .Where(grade => grade.Id == id))
+            .SingleOrDefaultAsync(cancellationToken);
 
         return grade is null ? NotFound() : Ok(grade);
     }
@@ -95,21 +85,24 @@ public sealed class StudentGradesController(GradingDbContext dbContext) : Contro
         CreateStudentGradeRequest request,
         CancellationToken cancellationToken)
     {
-        if (!await dbContext.Students.AnyAsync(student => student.Id == request.StudentId, cancellationToken))
+        var references = await dbContext.Students
+            .AsNoTracking()
+            .Where(student => student.Id == request.StudentId)
+            .Select(student => new
+            {
+                student.Id,
+                SubjectExists = dbContext.Subjects.Any(subject => subject.Id == request.SubjectId)
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (references is null)
         {
             return BadRequest(new { message = "The specified student does not exist." });
         }
 
-        if (!await dbContext.Subjects.AnyAsync(subject => subject.Id == request.SubjectId, cancellationToken))
+        if (!references.SubjectExists)
         {
             return BadRequest(new { message = "The specified subject does not exist." });
-        }
-
-        if (await dbContext.StudentGrades.AnyAsync(
-                grade => grade.StudentId == request.StudentId && grade.SubjectId == request.SubjectId,
-                cancellationToken))
-        {
-            return Conflict(new { message = "A grade record already exists for this student and subject." });
         }
 
         var grade = new StudentGrade
@@ -121,10 +114,19 @@ public sealed class StudentGradesController(GradingDbContext dbContext) : Contro
         };
 
         dbContext.StudentGrades.Add(grade);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (SqlServerConstraintErrors.IsUniqueConstraintViolation(exception))
+        {
+            return Conflict(new { message = "A grade record already exists for this student and subject." });
+        }
 
-        var response = await ProjectResponses(dbContext.StudentGrades.AsNoTracking())
-            .SingleAsync(item => item.Id == grade.Id, cancellationToken);
+        var response = await ProjectResponses(dbContext.StudentGrades
+                .AsNoTracking()
+                .Where(item => item.Id == grade.Id))
+            .SingleAsync(cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = grade.Id }, response);
     }

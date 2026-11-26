@@ -25,4 +25,3 @@ public sealed class StudentGrade
     [NotMapped]
     public string GradeLetter => GradeScale.GetLetterGrade(TotalMark);
 }
-// i changed the grades because the previous grades were not accurate.

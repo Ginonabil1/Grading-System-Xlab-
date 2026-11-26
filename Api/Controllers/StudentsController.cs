@@ -88,13 +88,6 @@ public sealed class StudentsController(GradingDbContext dbContext) : ControllerB
         StudentRequest request,
         CancellationToken cancellationToken)
     {
-        if (await dbContext.Students.AnyAsync(
-                student => student.NationalId == request.NationalId,
-                cancellationToken))
-        {
-            return Conflict(new { message = "A student with this National ID already exists." });
-        }
-
         var student = new Student
         {
             Name = request.Name.Trim(),
@@ -103,7 +96,14 @@ public sealed class StudentsController(GradingDbContext dbContext) : ControllerB
         };
 
         dbContext.Students.Add(student);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (SqlServerConstraintErrors.IsUniqueConstraintViolation(exception))
+        {
+            return Conflict(new { message = "A student with this National ID already exists." });
+        }
 
         var response = ToResponse(student);
         return CreatedAtAction(nameof(GetById), new { id = student.Id }, response);
@@ -121,18 +121,18 @@ public sealed class StudentsController(GradingDbContext dbContext) : ControllerB
             return NotFound();
         }
 
-        if (await dbContext.Students.AnyAsync(
-                other => other.Id != id && other.NationalId == request.NationalId,
-                cancellationToken))
-        {
-            return Conflict(new { message = "A student with this National ID already exists." });
-        }
-
         student.Name = request.Name.Trim();
         student.NationalId = request.NationalId;
         student.AcademicYear = request.AcademicYear.Trim();
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (SqlServerConstraintErrors.IsUniqueConstraintViolation(exception))
+        {
+            return Conflict(new { message = "A student with this National ID already exists." });
+        }
         return NoContent();
     }
 

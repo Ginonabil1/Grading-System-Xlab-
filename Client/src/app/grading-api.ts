@@ -96,6 +96,11 @@ export class GradingApi {
     return this.http.get<StudentGrade[]>(`${this.apiUrl}/student-grades`, { params });
   }
 
+  getStudentGrades(studentId: number): Observable<StudentGrade[]> {
+    const params = new HttpParams().set('studentId', studentId);
+    return this.http.get<StudentGrade[]>(`${this.apiUrl}/student-grades`, { params });
+  }
+
   getStatistics(subjectId: number): Observable<GradeStatistics> {
     const params = new HttpParams().set('subjectId', subjectId);
     return this.http.get<GradeStatistics>(`${this.apiUrl}/student-grades/statistics`, { params });

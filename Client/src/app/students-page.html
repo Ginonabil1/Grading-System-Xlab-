@@ -7,18 +7,18 @@
   <button class="button primary" type="button" (click)="openCreateForm()">＋ Add student</button>
 </section>
 
-@if (notice) { <div class="notice success" role="status">{{ notice }}</div> }
-@if (error) { <div class="notice error" role="alert">{{ error }}</div> }
+@if (notice) { <div class="toast" [class.success]="noticeType === 'success'" [class.error]="noticeType === 'error'" role="status" aria-live="polite"><span>{{ notice }}</span><button type="button" aria-label="Dismiss notification" (click)="dismissNotice()">×</button></div> }
+@if (error) { <div class="toast error" role="alert" aria-live="assertive"><span>{{ error }}</span></div> }
 
 <section class="panel filter-panel" aria-label="Student filters">
   <form class="filters" (ngSubmit)="loadStudents()">
     <label class="search-field">
       <span>Search students</span>
-      <input name="searchTerm" [(ngModel)]="searchTerm" placeholder="Name, national ID, or academic year" />
+      <input name="searchTerm" [(ngModel)]="searchTerm" (ngModelChange)="scheduleSearch()" placeholder="Name, national ID, or academic year" />
     </label>
     <label class="grade-filter">
       <span>Grade</span>
-      <select name="gradeLetter" [(ngModel)]="gradeLetter">
+      <select name="gradeLetter" [(ngModel)]="gradeLetter" (ngModelChange)="loadStudents()">
         <option value="">All grades</option>
         @for (grade of gradeOptions; track grade) { <option [value]="grade">Grade {{ grade }}</option> }
       </select>
@@ -44,7 +44,14 @@
       </label>
       <label>
         <span>Academic year</span>
-        <input name="academicYear" [(ngModel)]="form.academicYear" required maxlength="50" placeholder="e.g. 1st Primary" />
+        <select name="academicYear" [(ngModel)]="form.academicYear" required>
+          <option value="" disabled>Choose an academic year</option>
+          @for (group of academicYearGroups; track group.label) {
+            <optgroup [label]="group.label">
+              @for (year of group.options; track year) { <option [value]="year">{{ year }}</option> }
+            </optgroup>
+          }
+        </select>
       </label>
       <div class="form-actions">
         <button class="button secondary" type="button" (click)="cancelForm()">Cancel</button>
@@ -65,13 +72,34 @@
     <table>
       <thead><tr><th>STUDENT</th><th>NATIONAL ID</th><th>ACADEMIC YEAR</th><th class="actions-col">ACTIONS</th></tr></thead>
       <tbody>
-        @for (student of students; track student.id) {
-          <tr>
-            <td><div class="student-cell"><span class="avatar">{{ student.name.charAt(0).toUpperCase() }}</span><strong>{{ student.name }}</strong></div></td>
-            <td class="mono">{{ student.nationalId }}</td>
-            <td><span class="year-pill">{{ student.academicYear }}</span></td>
-            <td class="actions-col"><button class="text-button" type="button" (click)="editStudent(student)">Edit</button><button class="text-button danger-text" type="button" (click)="deleteStudent(student)">Delete</button></td>
-          </tr>
+        @for (group of studentGroups; track group.key) {
+          <tr class="year-group"><td colspan="4">{{ group.academicYear }} <span>{{ group.students.length }} {{ group.students.length === 1 ? 'student' : 'students' }}</span></td></tr>
+          @for (student of group.students; track student.id) {
+            @if (editingId === student.id) {
+              <tr class="editing-row">
+                <td><input class="inline-input" aria-label="Student name" name="edit-name" [(ngModel)]="form.name" [ngModelOptions]="{ standalone: true }" required maxlength="100" /></td>
+                <td><input class="inline-input mono" aria-label="National ID" name="edit-national-id" [(ngModel)]="form.nationalId" [ngModelOptions]="{ standalone: true }" required minlength="14" maxlength="14" pattern="[0-9]{14}" inputmode="numeric" /></td>
+                <td>
+                  <select class="inline-input" aria-label="Academic year" name="edit-academic-year" [(ngModel)]="form.academicYear" [ngModelOptions]="{ standalone: true }" required>
+                    @if (form.academicYear && !hasKnownAcademicYear(form.academicYear)) { <option [value]="form.academicYear">{{ form.academicYear }}</option> }
+                    @for (group of academicYearGroups; track group.label) {
+                      <optgroup [label]="group.label">
+                        @for (year of group.options; track year) { <option [value]="year">{{ year }}</option> }
+                      </optgroup>
+                    }
+                  </select>
+                </td>
+                <td class="actions-col"><button class="text-button" type="button" [disabled]="!validStudentForm() || saving" (click)="saveStudent()">{{ saving ? 'Saving…' : 'Save' }}</button><button class="text-button muted-text" type="button" [disabled]="saving" (click)="cancelForm()">Cancel</button></td>
+              </tr>
+            } @else {
+              <tr class="student-row" tabindex="0" [attr.aria-label]="'View profile for ' + student.name" (click)="openStudentProfile(student)" (keydown.enter)="openStudentProfile(student)" (keydown.space)="$event.preventDefault(); openStudentProfile(student)">
+                <td><div class="student-cell"><span class="avatar">{{ student.name.charAt(0).toUpperCase() }}</span><strong>{{ student.name }}</strong></div></td>
+                <td class="mono">{{ student.nationalId }}</td>
+                <td><span class="year-pill">{{ formatAcademicYear(student.academicYear) }}</span></td>
+                <td class="actions-col"><button class="text-button" type="button" (click)="$event.stopPropagation(); editStudent(student)">Edit</button><button class="text-button danger-text" type="button" (click)="$event.stopPropagation(); deleteStudent(student)">Delete</button></td>
+              </tr>
+            }
+          }
         } @empty {
           <tr><td colspan="4" class="empty-state">{{ loading ? 'Loading students…' : 'No students found. Add a student or adjust your search.' }}</td></tr>
         }
@@ -79,3 +107,52 @@
     </table>
   </div>
 </section>
+
+@if (selectedStudent; as student) {
+  <div class="profile-backdrop">
+    <section class="profile-card" role="dialog" aria-modal="true" aria-labelledby="student-profile-title">
+      <header class="profile-heading">
+        <div class="profile-identity">
+          <span class="profile-avatar">{{ student.name.charAt(0).toUpperCase() }}</span>
+          <div>
+            <div class="eyebrow">STUDENT PROFILE</div>
+            <h2 id="student-profile-title">{{ student.name }}</h2>
+            <span class="year-pill">{{ formatAcademicYear(student.academicYear) }}</span>
+          </div>
+        </div>
+        <button class="icon-button" type="button" aria-label="Close student profile" (click)="closeStudentProfile()">×</button>
+      </header>
+
+      <div class="profile-details">
+        <div><span>NATIONAL ID</span><strong>{{ student.nationalId }}</strong></div>
+        <div><span>ACADEMIC YEAR</span><strong>{{ formatAcademicYear(student.academicYear) }}</strong></div>
+      </div>
+
+      <div class="profile-grades-heading"><h3>Grades by subject</h3><span>{{ profileSubjects.length }} {{ profileSubjects.length === 1 ? 'subject' : 'subjects' }}</span></div>
+      @if (profileError) { <div class="profile-message error" role="alert">{{ profileError }}</div> }
+      @if (profileLoading) {
+        <div class="profile-message">Loading subjects and grades…</div>
+      } @else if (!profileError && profileSubjects.length) {
+        <div class="profile-grades-scroll">
+          <table class="profile-grades-table">
+            <thead><tr><th>SUBJECT</th><th>TERM 1</th><th>TERM 2</th><th>TOTAL</th><th>GRADE</th></tr></thead>
+            <tbody>
+              @for (item of profileSubjects; track item.subject.id) {
+                <tr>
+                  <td>{{ item.subject.name }}</td>
+                  @if (item.grade; as grade) {
+                    <td>{{ grade.term1Mark }} / 30</td><td>{{ grade.term2Mark }} / 30</td><td>{{ grade.totalMark }} / 60</td><td><span class="grade-pill" [class.grade-a]="grade.gradeLetter === 'A'" [class.grade-f]="grade.gradeLetter === 'F'">{{ grade.gradeLetter }}</span></td>
+                  } @else {
+                    <td colspan="4" class="not-graded">Not graded yet</td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (!profileError && !profileLoading) {
+        <div class="profile-message">No subjects have been added yet.</div>
+      }
+    </section>
+  </div>
+}

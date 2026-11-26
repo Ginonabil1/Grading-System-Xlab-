@@ -40,14 +40,16 @@ public sealed class SubjectsController(GradingDbContext dbContext) : ControllerB
         CancellationToken cancellationToken)
     {
         var name = request.Name.Trim();
-        if (await dbContext.Subjects.AnyAsync(subject => subject.Name == name, cancellationToken))
+        var subject = new Subject { Name = name };
+        dbContext.Subjects.Add(subject);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (SqlServerConstraintErrors.IsUniqueConstraintViolation(exception))
         {
             return Conflict(new { message = "A subject with this name already exists." });
         }
-
-        var subject = new Subject { Name = name };
-        dbContext.Subjects.Add(subject);
-        await dbContext.SaveChangesAsync(cancellationToken);
 
         var response = new SubjectResponse(subject.Id, subject.Name);
         return CreatedAtAction(nameof(GetById), new { id = subject.Id }, response);
